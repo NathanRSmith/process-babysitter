@@ -1,0 +1,18 @@
+{
+  "name": "au-dev-service-manager",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Nathan Smith <nathan.smith@aunalytics.com>",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "config": "^1.20.1",
+    "express": "^4.13.4",
+    "lodash": "^4.12.0",
+    "mississippi": "^1.2.0",
+    "socket.io": "^1.4.6"
+  }
+}

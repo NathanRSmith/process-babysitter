@@ -1,0 +1,17 @@
+{
+  "server": {
+    "port": 9876
+  },
+  "template_vars": {
+    "services_dir": "/Users/nathansmith/dev/Aunalytics/aunsight/"
+  },
+  "processes": {
+    "identity": {
+      "id": "identity",
+      "name": "Aunsight Identity Service",
+      "command": "node",
+      "cwd": "<%= services_dir %>aunsight-service-identity",
+      "args": ["<%= services_dir %>aunsight-service-identity/index.js"]
+    }
+  }
+}
