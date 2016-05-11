@@ -40,7 +40,7 @@
           <button class="start-btn" type="button">Start</button>
           <button class="stop-btn" type="button">Stop</button>
         </span>
-        <a role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-<%= model.id %>" aria-expanded="true" aria-controls="collapse-<%= model.id %>">
+        <a class="toggle-collapse" role="button" href="#">
           <%= model.config.name %>
         </a>
       </h4>
@@ -131,10 +131,12 @@
       events: {
         'click .start-btn': '_onStartBtn',
         'click .stop-btn': '_onStopBtn',
+        'click .toggle-collapse': 'toggle'
       },
       initialize: function(options) {
         var that = this;
         this.model = options.model;
+        this._shown = localStorage.getItem('process:'+this.model.id+':shown') == 'true';
         this.render();
         this.listenTo(this.model, 'started', this._onStartedEvt);
         this.listenTo(this.model, 'stopped', this._onStoppedEvt);
@@ -144,15 +146,15 @@
         scrollBottom(this.$('.stdout'));
         scrollBottom(this.$('.stderr'));
 
-        // update localstorage on toggle
-        this.$el.on('shown.bs.collapse', function () {
-          localStorage.setItem('process:'+that.model.id+':shown', true);
-          scrollBottom(that.$('.stdout'));
-          scrollBottom(that.$('.stderr'));
-        });
-        this.$el.on('hidden.bs.collapse', function () {
-          localStorage.setItem('process:'+that.model.id+':shown', false);
-        });
+        // // update localstorage on toggle
+        // this.$el.on('shown.bs.collapse', function () {
+        //   localStorage.setItem('process:'+that.model.id+':shown', true);
+        //   scrollBottom(that.$('.stdout'));
+        //   scrollBottom(that.$('.stderr'));
+        // });
+        // this.$el.on('hidden.bs.collapse', function () {
+        //   localStorage.setItem('process:'+that.model.id+':shown', false);
+        // });
       },
       render: function() {
         this.$el.html(this.template({
@@ -160,6 +162,25 @@
         }));
         $('#processes-container').append(this.$el);
         return this;
+      },
+      hide: function() {
+        if(this._shown) this.$('.collapse').hide();
+        this._shown = false;
+        localStorage.setItem('process:'+this.model.id+':shown', false);
+      },
+      show: function() {
+        if(!this._shown) {
+          this.$('.collapse').show();
+          _.defer(scrollBottom, this.$('.stdout'));
+          _.defer(scrollBottom, this.$('.stderr'));
+        }
+        this._shown = true;
+        localStorage.setItem('process:'+this.model.id+':shown', true);
+      },
+      toggle: function(evt) {
+        if(evt) evt.preventDefault();
+        if(this._shown) this.hide();
+        else this.show();
       },
       _animateActivity: function() {
         if(this._activityTimer) clearInterval(this._activityTimer);
@@ -201,7 +222,7 @@
           this.$('.stdout').html(this.model.stdout.join('\n')+'\n');
         }
         else this.$('.stdout').append(data+'\n');
-        scrollBottom(this.$('.stdout'));
+        if(this._shown) scrollBottom(this.$('.stdout'));
 
         this._animateActivity();
       },
@@ -212,7 +233,7 @@
           this.$('.stderr').html(this.model.stderr.join('\n')+'\n');
         }
         else this.$('.stderr').append(data+'\n');
-        scrollBottom(this.$('.stderr'));
+        if(this._shown) scrollBottom(this.$('.stderr'));
 
         this._animateActivity();
       },
@@ -244,16 +265,10 @@
         _.invokeMap(processes.toArray(), 'sendStop');
       },
       _onCollapseAllBtn: function() {
-        _.chain(processViews)
-          .invokeMap('$', '.collapse')
-          .invokeMap('collapse', 'hide')
-          .value();
+        _.invokeMap(processViews, 'hide');
       },
       _onExpandAllBtn: function() {
-        _.chain(processViews)
-          .invokeMap('$', '.collapse')
-          .invokeMap('collapse', 'show')
-          .value();
+        _.invokeMap(processViews, 'show');
       },
     }))();
 
