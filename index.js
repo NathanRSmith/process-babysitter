@@ -8,16 +8,19 @@ var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var miss = require('mississippi');
+var SplitStream = require('split2');
 
 var processes = _.chain(CONFIG.processes)
   .map(function(v, k) {
     return {
       config: v,
+      id: v.id,
+      status: 'stopped',
       command_tpl: _.template(v.command),
       cwd_tpl: _.template(v.cwd),
       args_tpls: _.map(v.args, function(v) {
         return _.template(v);
-      })
+      }),
     };
   })
   .keyBy('config.id')
@@ -31,7 +34,7 @@ app.use('/static', express.static('static'));
 
 app.get('/process', function(req, res) {
   res.json(_.map(processes, function(v) {
-    return _.pick(v, ['config', 'status', 'uptime']);
+    return _.pick(v, ['id', 'config', 'status', 'uptime']);
   }));
 });
 app.post('/process/:id/start', function(req, res) {
@@ -43,32 +46,42 @@ app.post('/process/:id/start', function(req, res) {
     _.map(proc.args_tpls, function(v) { return v(CONFIG.template_vars); }),
     {cwd: proc.cwd_tpl(CONFIG.template_vars)}
   );
+
+
   proc.child.on('exit', function() {
-    console.log('stopped');
+    console.log(proc.id+' stopped');
     proc.status = 'stopped';
+    io.sockets.emit('process:'+proc.id+':stopped')
+    // proc.child.stdout.pipe(process.stdout);
+    // proc.child.stderr.unpipe(process.stderr);
     delete proc.child;
   });
 
-
-  // var thru = miss.through(function(data, enc, cb) {
-  //   if(!_.isNull(data)) {
-  //     return cb(null, data);
-  //   }
-  //   console.log('here')
-  //   cb();
-  //   thru.destroy();
-  // });
-  // proc.child.stderr.pipe(thru).pipe(process.stdout);
-  // proc.child.stdout.pipe(thru);
-
-
-  proc.child.stderr.pipe(process.stderr);
-  proc.child.stdout.pipe(process.stdout);
-
+  miss.pipe(
+    proc.child.stdout,
+    SplitStream(),
+    // process.stdout,
+    miss.through.obj(function(data, enc, cb) {
+      io.sockets.emit('process:'+proc.id+':stdout', data);
+      cb();
+    }),
+    function(err) { if(err) console.error(err); } // no-op
+  );
+  miss.pipe(
+    proc.child.stderr,
+    SplitStream(),
+    // process.stderr,
+    miss.through.obj(function(data, enc, cb) {
+      io.sockets.emit('process:'+proc.id+':stderr', data);
+      cb();
+    }),
+    function(err) { if(err) console.error(err); } // no-op
+  );
 
 
   proc.status = 'started';
-  console.log('started');
+  io.sockets.emit('process:'+proc.id+':started');
+  console.log(proc.config.id+' started');
   return res.sendStatus(200);
 });
 app.post('/process/:id/stop', function(req, res) {

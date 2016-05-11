@@ -6,12 +6,26 @@
     "services_dir": "/Users/nathansmith/dev/Aunalytics/aunsight/"
   },
   "processes": {
+    "api": {
+      "id": "api",
+      "name": "Aunsight API Service",
+      "command": "node",
+      "cwd": "<%= services_dir %>aunsight-api",
+      "args": ["<%= services_dir %>aunsight-api/index.js"]
+    },
     "identity": {
       "id": "identity",
       "name": "Aunsight Identity Service",
       "command": "node",
       "cwd": "<%= services_dir %>aunsight-service-identity",
       "args": ["<%= services_dir %>aunsight-service-identity/index.js"]
+    },
+    "permission": {
+      "id": "permission",
+      "name": "Aunsight Permission Service",
+      "command": "node",
+      "cwd": "<%= services_dir %>aunsight-service-permission",
+      "args": ["<%= services_dir %>aunsight-service-permission/index.js"]
     }
   }
 }

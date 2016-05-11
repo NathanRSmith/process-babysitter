@@ -1,1 +1,153 @@
-hi
+<html>
+<head>
+  <link href="/static/bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    pre.stdout, pre.stderr {
+      white-space: pre-wrap;
+    }
+
+  </style>
+  <script src="/static/bower_components/jquery/dist/jquery.min.js"></script>
+  <script src="/static/bower_components/lodash/dist/lodash.min.js"></script>
+  <script src="/static/bower_components/backbone/backbone-min.js"></script>
+  <script src="/static/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+  <script src="/static/bower_components/socket.io-client/socket.io.js"></script>
+
+  <script id="process-template" type="lodash/template">
+    <div class="panel-heading" role="tab" id="heading-<%= model.id %>">
+      <h4 class="panel-title">
+        <span class="pull-right">
+          <span class="status">(<%= model.status %>)</span>
+          <button class="start-btn" type="button">Start</button>
+          <button class="stop-btn" type="button">Stop</button>
+        </span>
+        <a role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-<%= model.id %>" aria-expanded="true" aria-controls="collapse-<%= model.id %>">
+          <%= model.config.name %>
+        </a>
+      </h4>
+    </div>
+    <div id="collapse-<%= model.id %>" class="panel-collapse collapse <%= localStorage.getItem('process:'+model.id+':shown') == 'true' ? 'in' : '' %>" role="tabpanel" aria-labelledby="heading-<%= model.id %>">
+      <div class="panel-body">
+        <div class="row">
+          <div class="col-sm-6"><pre class="stdout pre-scrollable"><%= model.stdout_100 %></pre></div>
+          <div class="col-sm-6"><pre class="stderr pre-scrollable"><%= model.stderr_100 %></pre></div>
+        </div>
+      </div>
+    </div>
+  </script>
+</head>
+<body>
+
+  <div id="processes-container" class="panel-group" id="accordion" role="tablist" aria-multiselectable="true"></div>
+
+
+  <script type="text/javascript">
+    var socket = io('http://localhost:9876');
+
+    var Process = Backbone.Model.extend({
+      initialize: function(options) {
+        this.stdout = this.get('stdout_100') || [];
+        this.stderr = this.get('stderr_100') || [];
+
+        socket.on('process:'+this.id+':stdout', this._onStdoutEvt.bind(this));
+        socket.on('process:'+this.id+':stderr', this._onStderrEvt.bind(this));
+        socket.on('process:'+this.id+':started', this._onStartedEvt.bind(this));
+        socket.on('process:'+this.id+':stopped', this._onStoppedEvt.bind(this));
+      },
+      _onStdoutEvt: function(data) {
+        this.stdout.push(data);
+        this.trigger('stdout', data);
+      },
+      _onStderrEvt: function(data) {
+        this.stderr.push(data);
+        this.trigger('stderr', data);
+      },
+      _onStartedEvt: function() {
+        console.log('started');
+        this.trigger('started');
+      },
+      _onStoppedEvt: function() {
+        console.log('stopped');
+        this.trigger('stopped');
+      },
+      sendStart: function() {
+        $.post('/process/'+this.id+'/start');
+      },
+      sendStop: function() {
+        $.post('/process/'+this.id+'/stop');
+      }
+    })
+
+
+
+    var ProcessView = Backbone.View.extend({
+      className: 'panel panel-default',
+      template: _.template($('#process-template').html()),
+      events: {
+        'click .start-btn': '_onStartBtn',
+        'click .stop-btn': '_onStopBtn',
+      },
+      initialize: function(options) {
+        var that = this;
+        this.model = options.model;
+        this.render();
+        this.listenTo(this.model, 'started', this._onStartedEvt);
+        this.listenTo(this.model, 'stopped', this._onStoppedEvt);
+        this.listenTo(this.model, 'stdout', this._onStdoutEvt);
+        this.listenTo(this.model, 'stderr', this._onStderrEvt);
+        this.$el.addClass(this.model.get('status'));
+
+        // update localstorage on toggle
+        this.$el.on('shown.bs.collapse', function () { localStorage.setItem('process:'+that.model.id+':shown', true); });
+        this.$el.on('hidden.bs.collapse', function () { localStorage.setItem('process:'+that.model.id+':shown', false); });
+      },
+      render: function() {
+        this.$el.html(this.template({
+          model: this.model.toJSON()
+        }));
+        $('#processes-container').append(this.$el);
+        return this;
+      },
+      _onStartedEvt: function() {
+        this.$('.status').html('(started)');
+        this.$el.removeClass('stopped').addClass('started');
+        this.model.sendStart();
+      },
+      _onStoppedEvt: function() {
+        this.$('.status').html('(stopped)');
+        this.$el.removeClass('started').addClass('stopped');
+      },
+      _onStartBtn: function() {
+        this.model.sendStart();
+      },
+      _onStopBtn: function() {
+        this.model.sendStop();
+      },
+      _onStdoutEvt: function(data) {
+        this.$('.stdout').append(data+'\n');
+        var el    = this.$('.stdout');
+        var height = el[0].scrollHeight;
+        el.scrollTop(height);
+      },
+      _onStderrEvt: function(data) {
+        this.$('.stderr').append(data+'\n');
+        var el    = this.$('.stderr');
+        var height = el[0].scrollHeight;
+        el.scrollTop(height);
+      },
+    })
+
+
+    var processes = new Backbone.Collection(null, {model: Process});
+    var processViews = [];
+
+    $.get('/process/')
+      .then(function(body, status, jqxhr) {
+        processes.set(body);
+        processes.each(function(v) {
+          processViews.push(new ProcessView({model: v}));
+        });
+      });
+
+  </script>
+</html>
