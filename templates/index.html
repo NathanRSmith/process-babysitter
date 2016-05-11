@@ -2,6 +2,9 @@
 <head>
   <link href="/static/bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
+    body {
+      padding-bottom: 50px;
+    }
     pre.stdout, pre.stderr {
       white-space: pre-wrap;
     }
@@ -47,12 +50,24 @@
 <body>
 
   <div id="processes-container" class="panel-group" id="accordion" role="tablist" aria-multiselectable="true"></div>
+  <nav id="controlbar" class="navbar navbar-inverse navbar-fixed-bottom">
+    <div class="container">
+      <button id="pause-btn" type="button" class="btn btn-default navbar-btn">Pause</button>
+      <button id="start-all-btn" type="button" class="btn btn-success navbar-btn">Start All</button>
+      <button id="stop-all-btn" type="button" class="btn btn-danger navbar-btn">Stop All</button>
+      <button id="collapse-all-btn" type="button" class="btn btn-default navbar-btn">Collapse All</button>
+      <button id="expand-all-btn" type="button" class="btn btn-default navbar-btn">Expand All</button>
+    </div>
+  </nav>
 
 
   <script type="text/javascript">
     var socket = io('http://localhost:9876');
-    var MAX_DISPLAYED_LINES = 500;
-    var CLEANUP_THRESHOLD = 750;
+    var MAX_DISPLAYED_LINES = 250;
+    var CLEANUP_THRESHOLD = 300;
+    // var MAX_DISPLAYED_LINES = 500;
+    // var CLEANUP_THRESHOLD = 750;
+    var paused = false;
 
     function scrollBottom(el) {
       var height = el[0].scrollHeight;
@@ -75,10 +90,12 @@
         socket.on('process:'+this.id+':stopped', this._onStoppedEvt.bind(this));
       },
       _onStdoutEvt: function(data) {
+        if(paused) return;
         this.stdout.push(data);
         this.trigger('stdout', data);
       },
       _onStderrEvt: function(data) {
+        if(paused) return;
         this.stderr.push(data);
         this.trigger('stderr', data);
       },
@@ -169,7 +186,46 @@
         else this.$('.stderr').append(data+'\n');
         scrollBottom(this.$('.stderr'));
       },
-    })
+    });
+
+    var navbarView = new (Backbone.View.extend({
+      el: '#controlbar',
+      events: {
+        'click #pause-btn': '_onPauseBtn',
+        'click #start-all-btn': '_onStartAllBtn',
+        'click #stop-all-btn': '_onStopAllBtn',
+        'click #collapse-all-btn': '_onCollapseAllBtn',
+        'click #expand-all-btn': '_onExpandAllBtn',
+      },
+      _onPauseBtn: function() {
+        if(paused) {
+          paused = false;
+          this.$('#pause-btn').html('Pause');
+        }
+        else {
+          paused = true;
+          this.$('#pause-btn').html('Resume');
+        }
+      },
+      _onStartAllBtn: function() {
+        _.invokeMap(processes.toArray(), 'sendStart');
+      },
+      _onStopAllBtn: function() {
+        _.invokeMap(processes.toArray(), 'sendStop');
+      },
+      _onCollapseAllBtn: function() {
+        _.chain(processViews)
+          .invokeMap('$', '.collapse')
+          .invokeMap('collapse', 'hide')
+          .value();
+      },
+      _onExpandAllBtn: function() {
+        _.chain(processViews)
+          .invokeMap('$', '.collapse')
+          .invokeMap('collapse', 'show')
+          .value();
+      },
+    }))();
 
 
     var processes = new Backbone.Collection(null, {model: Process, comparator: 'id'});
