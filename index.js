@@ -11,6 +11,7 @@ var miss = require('mississippi');
 var SplitStream = require('split2');
 
 var processes = _.chain(CONFIG.processes)
+  .filter({enabled: true})
   .map(function(v, k) {
     return {
       id: v.id,
