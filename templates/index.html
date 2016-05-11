@@ -14,6 +14,13 @@
     .process.started .status {
       color: green;
     }
+    .activity {
+      color: blue;
+    }
+    .collapsing {
+      -webkit-transition: none;
+      transition: none;
+    }
 
 
 
@@ -28,6 +35,7 @@
     <div class="panel-heading" role="tab" id="heading-<%= model.id %>">
       <h4 class="panel-title">
         <span class="pull-right">
+          <span class="activity glyphicon glyphicon-asterisk" style="opacity: 0;"></span>
           <span class="status">(<%= model.status %>)</span>
           <button class="start-btn" type="button">Start</button>
           <button class="stop-btn" type="button">Stop</button>
@@ -63,8 +71,8 @@
 
   <script type="text/javascript">
     var socket = io('http://localhost:9876');
-    var MAX_DISPLAYED_LINES = 250;
-    var CLEANUP_THRESHOLD = 300;
+    var MAX_DISPLAYED_LINES = 100;
+    var CLEANUP_THRESHOLD = 150;
     // var MAX_DISPLAYED_LINES = 500;
     // var CLEANUP_THRESHOLD = 750;
     var paused = false;
@@ -153,6 +161,24 @@
         $('#processes-container').append(this.$el);
         return this;
       },
+      _animateActivity: function() {
+        if(this._activityTimer) clearInterval(this._activityTimer);
+        var el = this.$('.activity');
+        var idx = 0;
+        el.css('opacity', 1);
+
+        // every second, lighten
+        var timer = this._activityTimer = setInterval(function() {
+          if(idx == 30) {
+            clearInterval(timer);
+            el.css('opacity', 0);
+          }
+          else {
+            idx++;
+            el.css('opacity', 1/30 * (30-idx));
+          }
+        }, 1000);
+      },
       _onStartedEvt: function() {
         this.$('.status').html('(started)');
         this.$el.removeClass('stopped').addClass('started');
@@ -176,6 +202,8 @@
         }
         else this.$('.stdout').append(data+'\n');
         scrollBottom(this.$('.stdout'));
+
+        this._animateActivity();
       },
       _onStderrEvt: function(data) {
         if(this.model.stderr.length > CLEANUP_THRESHOLD) {
@@ -185,6 +213,8 @@
         }
         else this.$('.stderr').append(data+'\n');
         scrollBottom(this.$('.stderr'));
+
+        this._animateActivity();
       },
     });
 
