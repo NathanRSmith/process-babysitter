@@ -26,6 +26,13 @@
       "command": "node",
       "cwd": "<%= services_dir %>aunsight-service-permission",
       "args": ["<%= services_dir %>aunsight-service-permission/index.js"]
+    },
+    "minotaur": {
+      "id": "minotaur",
+      "name": "Aunsight Minotaur Service",
+      "command": "node",
+      "cwd": "<%= services_dir %>aunsight-service-minotaur",
+      "args": ["<%= services_dir %>aunsight-service-minotaur/index.js"]
     }
   }
 }

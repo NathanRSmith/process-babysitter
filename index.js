@@ -13,9 +13,11 @@ var SplitStream = require('split2');
 var processes = _.chain(CONFIG.processes)
   .map(function(v, k) {
     return {
-      config: v,
       id: v.id,
+      config: v,
       status: 'stopped',
+      stdout_100: [],
+      stderr_100: [],
       command_tpl: _.template(v.command),
       cwd_tpl: _.template(v.cwd),
       args_tpls: _.map(v.args, function(v) {
@@ -26,6 +28,12 @@ var processes = _.chain(CONFIG.processes)
   .keyBy('config.id')
   .value();
 
+function pushCircular(arr, item, limit) {
+  arr.push(item);
+  if(arr.length > limit) arr.shift();
+  return arr;
+}
+
 /**************************** ROUTES ****************************/
 app.get('/', function(req, res){
   res.sendFile(path.join(__dirname, 'templates/index.html'));
@@ -34,7 +42,7 @@ app.use('/static', express.static('static'));
 
 app.get('/process', function(req, res) {
   res.json(_.map(processes, function(v) {
-    return _.pick(v, ['id', 'config', 'status', 'uptime']);
+    return _.pick(v, ['id', 'config', 'status', 'uptime', 'stdout_100', 'stderr_100']);
   }));
 });
 app.post('/process/:id/start', function(req, res) {
@@ -63,6 +71,7 @@ app.post('/process/:id/start', function(req, res) {
     // process.stdout,
     miss.through.obj(function(data, enc, cb) {
       io.sockets.emit('process:'+proc.id+':stdout', data);
+      pushCircular(proc.stdout_100, data, 100);
       cb();
     }),
     function(err) { if(err) console.error(err); } // no-op
@@ -73,6 +82,7 @@ app.post('/process/:id/start', function(req, res) {
     // process.stderr,
     miss.through.obj(function(data, enc, cb) {
       io.sockets.emit('process:'+proc.id+':stderr', data);
+      pushCircular(proc.stderr_100, data, 100);
       cb();
     }),
     function(err) { if(err) console.error(err); } // no-op

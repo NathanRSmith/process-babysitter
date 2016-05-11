@@ -5,6 +5,14 @@
     pre.stdout, pre.stderr {
       white-space: pre-wrap;
     }
+    .process.stopped .status {
+      color: red;
+    }
+    .process.started .status {
+      color: green;
+    }
+
+
 
   </style>
   <script src="/static/bower_components/jquery/dist/jquery.min.js"></script>
@@ -29,8 +37,8 @@
     <div id="collapse-<%= model.id %>" class="panel-collapse collapse <%= localStorage.getItem('process:'+model.id+':shown') == 'true' ? 'in' : '' %>" role="tabpanel" aria-labelledby="heading-<%= model.id %>">
       <div class="panel-body">
         <div class="row">
-          <div class="col-sm-6"><pre class="stdout pre-scrollable"><%= model.stdout_100 %></pre></div>
-          <div class="col-sm-6"><pre class="stderr pre-scrollable"><%= model.stderr_100 %></pre></div>
+          <div class="col-sm-6"><pre class="stdout pre-scrollable"><%= model.stdout_100.length ? model.stdout_100.join('\n')+'\n' : '' %></pre></div>
+          <div class="col-sm-6"><pre class="stderr pre-scrollable"><%= model.stderr_100.length ? model.stderr_100.join('\n')+'\n' : '' %></pre></div>
         </div>
       </div>
     </div>
@@ -43,6 +51,18 @@
 
   <script type="text/javascript">
     var socket = io('http://localhost:9876');
+    var MAX_DISPLAYED_LINES = 500;
+    var CLEANUP_THRESHOLD = 750;
+
+    function scrollBottom(el) {
+      var height = el[0].scrollHeight;
+      el.scrollTop(height);
+    }
+    function pushCircular(arr, item, limit) {
+      arr.push(item);
+      if(arr.length > limit) arr.shift();
+      return arr;
+    }
 
     var Process = Backbone.Model.extend({
       initialize: function(options) {
@@ -81,7 +101,7 @@
 
 
     var ProcessView = Backbone.View.extend({
-      className: 'panel panel-default',
+      className: 'process panel panel-default',
       template: _.template($('#process-template').html()),
       events: {
         'click .start-btn': '_onStartBtn',
@@ -96,10 +116,18 @@
         this.listenTo(this.model, 'stdout', this._onStdoutEvt);
         this.listenTo(this.model, 'stderr', this._onStderrEvt);
         this.$el.addClass(this.model.get('status'));
+        scrollBottom(this.$('.stdout'));
+        scrollBottom(this.$('.stderr'));
 
         // update localstorage on toggle
-        this.$el.on('shown.bs.collapse', function () { localStorage.setItem('process:'+that.model.id+':shown', true); });
-        this.$el.on('hidden.bs.collapse', function () { localStorage.setItem('process:'+that.model.id+':shown', false); });
+        this.$el.on('shown.bs.collapse', function () {
+          localStorage.setItem('process:'+that.model.id+':shown', true);
+          scrollBottom(that.$('.stdout'));
+          scrollBottom(that.$('.stderr'));
+        });
+        this.$el.on('hidden.bs.collapse', function () {
+          localStorage.setItem('process:'+that.model.id+':shown', false);
+        });
       },
       render: function() {
         this.$el.html(this.template({
@@ -124,21 +152,27 @@
         this.model.sendStop();
       },
       _onStdoutEvt: function(data) {
-        this.$('.stdout').append(data+'\n');
-        var el    = this.$('.stdout');
-        var height = el[0].scrollHeight;
-        el.scrollTop(height);
+        if(this.model.stdout.length > CLEANUP_THRESHOLD) {
+          console.log('cleaning up '+this.model.id+' stdout');
+          this.model.stdout = this.model.stdout.slice(0, MAX_DISPLAYED_LINES);
+          this.$('.stdout').html(this.model.stdout.join('\n')+'\n');
+        }
+        else this.$('.stdout').append(data+'\n');
+        scrollBottom(this.$('.stdout'));
       },
       _onStderrEvt: function(data) {
-        this.$('.stderr').append(data+'\n');
-        var el    = this.$('.stderr');
-        var height = el[0].scrollHeight;
-        el.scrollTop(height);
+        if(this.model.stderr.length > CLEANUP_THRESHOLD) {
+          console.log('cleaning up '+this.model.id+' stderr');
+          this.model.stderr = this.model.stderr.slice(0, MAX_DISPLAYED_LINES);
+          this.$('.stderr').html(this.model.stderr.join('\n')+'\n');
+        }
+        else this.$('.stderr').append(data+'\n');
+        scrollBottom(this.$('.stderr'));
       },
     })
 
 
-    var processes = new Backbone.Collection(null, {model: Process});
+    var processes = new Backbone.Collection(null, {model: Process, comparator: 'id'});
     var processViews = [];
 
     $.get('/process/')
