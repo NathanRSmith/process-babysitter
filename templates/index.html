@@ -60,11 +60,12 @@
   <div id="processes-container" class="panel-group" id="accordion" role="tablist" aria-multiselectable="true"></div>
   <nav id="controlbar" class="navbar navbar-inverse navbar-fixed-bottom">
     <div class="container">
-      <button id="pause-btn" type="button" class="btn btn-default navbar-btn">Pause</button>
       <button id="start-all-btn" type="button" class="btn btn-success navbar-btn">Start All</button>
       <button id="stop-all-btn" type="button" class="btn btn-danger navbar-btn">Stop All</button>
       <button id="collapse-all-btn" type="button" class="btn btn-default navbar-btn">Collapse All</button>
       <button id="expand-all-btn" type="button" class="btn btn-default navbar-btn">Expand All</button>
+      <button id="pause-btn" type="button" class="btn btn-default navbar-btn">Pause</button>
+      <button id="clear-btn" type="button" class="btn btn-warning navbar-btn">Clear</button>
     </div>
   </nav>
 
@@ -120,6 +121,11 @@
       },
       sendStop: function() {
         $.post('/process/'+this.id+'/stop');
+      },
+      sendClear: function() {
+        $.post('/process/'+this.id+'/clear');
+        this.stdout = [];
+        this.stderr = [];
       }
     })
 
@@ -237,26 +243,22 @@
 
         this._animateActivity();
       },
+      clear: function() {
+        this.model.sendClear();
+        this.$('.stdout').empty();
+        this.$('.stderr').empty();
+      }
     });
 
     var navbarView = new (Backbone.View.extend({
       el: '#controlbar',
       events: {
-        'click #pause-btn': '_onPauseBtn',
         'click #start-all-btn': '_onStartAllBtn',
         'click #stop-all-btn': '_onStopAllBtn',
         'click #collapse-all-btn': '_onCollapseAllBtn',
         'click #expand-all-btn': '_onExpandAllBtn',
-      },
-      _onPauseBtn: function() {
-        if(paused) {
-          paused = false;
-          this.$('#pause-btn').html('Pause');
-        }
-        else {
-          paused = true;
-          this.$('#pause-btn').html('Resume');
-        }
+        'click #pause-btn': '_onPauseBtn',
+        'click #clear-btn': '_onClearBtn',
       },
       _onStartAllBtn: function() {
         _.invokeMap(processes.toArray(), 'sendStart');
@@ -269,6 +271,19 @@
       },
       _onExpandAllBtn: function() {
         _.invokeMap(processViews, 'show');
+      },
+      _onPauseBtn: function() {
+        if(paused) {
+          paused = false;
+          this.$('#pause-btn').html('Pause');
+        }
+        else {
+          paused = true;
+          this.$('#pause-btn').html('Resume');
+        }
+      },
+      _onClearBtn: function() {
+        _.invokeMap(processViews, 'clear');
       },
     }))();
 

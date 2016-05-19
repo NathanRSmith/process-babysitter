@@ -102,6 +102,13 @@ app.post('/process/:id/stop', function(req, res) {
   proc.child.kill();
   return res.sendStatus(200);
 });
+app.post('/process/:id/clear', function(req, res) {
+  if(!processes[req.params.id]) return res.sendStatus(404);
+  var proc = processes[req.params.id];
+  proc.stdout_100 = [];
+  proc.stderr_100 = [];
+  return res.sendStatus(200);
+});
 
 
 
