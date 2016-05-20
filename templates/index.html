@@ -139,6 +139,8 @@
         'click .stop-btn': '_onStopBtn',
         'click .toggle-collapse': 'toggle'
       },
+      ACTIVITY_STEPS: 10,
+      ACTIVITY_INTERVAL: 1000,  // ms
       initialize: function(options) {
         var that = this;
         this.model = options.model;
@@ -193,18 +195,19 @@
         var el = this.$('.activity');
         var idx = 0;
         el.css('opacity', 1);
+        var steps = this.ACTIVITY_STEPS;
 
         // every second, lighten
         var timer = this._activityTimer = setInterval(function() {
-          if(idx == 30) {
+          if(idx == steps) {
             clearInterval(timer);
             el.css('opacity', 0);
           }
           else {
             idx++;
-            el.css('opacity', 1/30 * (30-idx));
+            el.css('opacity', 1/steps * (steps-idx));
           }
-        }, 1000);
+        }, this.ACTIVITY_INTERVAL);
       },
       _onStartedEvt: function() {
         this.$('.status').html('(started)');
