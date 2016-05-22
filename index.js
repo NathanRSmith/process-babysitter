@@ -50,7 +50,7 @@ module.exports = function(CONFIG) {
   app.get('/', function(req, res){
     res.sendFile(path.join(__dirname, 'templates/index.html'));
   });
-  app.use('/static', express.static('static'));
+  app.use('/static', express.static(path.join(__dirname, 'static')));
 
   // List processes
   app.get('/process', function(req, res) {
