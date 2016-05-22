@@ -1,5 +1,5 @@
 {
-  "name": "au-dev-service-manager",
+  "name": "process-babysitter",
   "version": "1.0.0",
   "description": "Manages long-running processes during development with GUI console.",
   "main": "index.js",
