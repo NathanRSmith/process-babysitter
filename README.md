@@ -30,7 +30,7 @@ The configuration should contain:
     * `cwd`: Templated value for the subprocess working directory.
     * `args`: Array of templated arguments for the subprocess (everything that follows the command).
 
-Example:
+Example `default.json`:
 
 ```javascript
 {
