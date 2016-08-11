@@ -61,7 +61,11 @@ Example `default.json`:
 
 It should be noted that child processes will inherit the environment variables set when the babysitter is started. Setting variables per process is not yet supported but planned in the near future.
 
-Use the standard [node-config variables](https://github.com/lorenwest/node-config/wiki/Environment-Variables) (`NODE_ENV`, `NODE_APP_INSTANCE`, etc) to change which config files are loaded.
+Use the standard [node-config variables](https://github.com/lorenwest/node-config/wiki/Environment-Variables) (`NODE_ENV`, `NODE_APP_INSTANCE`, etc) to change which config files are loaded. The babysitter will pass on any `process.env` variables except the following so as to not interfere with child processes.
+
+* `NODE_CONFIG_DIR`
+* `NODE_ENV`
+* `NODE_APP_INSTANCE`
 
 In this manner it is possible to have many project configurations in the same directory (if desired).
 

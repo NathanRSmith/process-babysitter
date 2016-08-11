@@ -69,7 +69,10 @@ module.exports = function(CONFIG) {
     proc.child = spawn(
       proc.command_tpl(CONFIG.template_vars),
       _.map(proc.args_tpls, function(v) { return v(CONFIG.template_vars); }),
-      {cwd: proc.cwd_tpl(CONFIG.template_vars)}
+      {
+        cwd: proc.cwd_tpl(CONFIG.template_vars),
+        env: _.omit(process.env, 'NODE_CONFIG_DIR', 'NODE_ENV', 'NODE_APP_INSTANCE')
+      }
     );
 
     // on exit, notify & remove child obj
