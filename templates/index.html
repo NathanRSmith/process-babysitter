@@ -21,6 +21,9 @@
       -webkit-transition: none;
       transition: none;
     }
+    .process:hover .panel-heading {
+      background-color: #e5e5e5;
+    }
 
 
 
@@ -39,6 +42,8 @@
           <span class="status">(<%= model.status %>)</span>
           <button class="start-btn" type="button">Start</button>
           <button class="stop-btn" type="button">Stop</button>
+          <button class="restart-btn" type="button">Restart</button>
+          <button class="clear-btn" type="button">Clear</button>
         </span>
         <a class="toggle-collapse" role="button" href="#">
           <%= model.config.name %>
@@ -137,6 +142,8 @@
       events: {
         'click .start-btn': '_onStartBtn',
         'click .stop-btn': '_onStopBtn',
+        'click .restart-btn': '_onRestartBtn',
+        'click .clear-btn': 'clear',
         'click .toggle-collapse': 'toggle'
       },
       ACTIVITY_STEPS: 10,
@@ -223,6 +230,11 @@
       },
       _onStopBtn: function() {
         this.model.sendStop();
+      },
+      _onRestartBtn: function() {
+        this.model.sendStop();
+        setTimeout(this.model.sendStart.bind(this.model), 1000);
+        // this.model.sendStart();
       },
       _onStdoutEvt: function(data) {
         if(this.model.stdout.length > CLEANUP_THRESHOLD) {

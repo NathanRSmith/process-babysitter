@@ -1,0 +1,29 @@
+{
+  "server": {
+    "port": 9876
+  },
+  "template_vars": {},
+  "processes": {
+    "10sec": {
+      "id": "10sec",
+      "enabled": true,
+      "name": "10 Second Loop",
+      "command": "bash",
+      "args": ["sample/script.sh","10"]
+    },
+    "5sec": {
+      "id": "5sec",
+      "enabled": true,
+      "name": "5 Second Loop",
+      "command": "bash",
+      "args": ["sample/script.sh","5"]
+    },
+    "30sec": {
+      "id": "30sec",
+      "enabled": true,
+      "name": "30 Second Loop",
+      "command": "bash",
+      "args": ["sample/script.sh","30"]
+    }
+  }
+}
