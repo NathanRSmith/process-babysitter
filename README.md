@@ -1,7 +1,7 @@
 # Process Babysitter
 
-The babysitter is meant to alleviate the tedium of starting & managing multiple processes when developing distributed applications. This manager is meant to be used **FOR DEVELOPMENT ONLY**. Please use something better for production such [systemd](https://en.wikipedia.org/wiki/Systemd), [upstart](https://en.wikipedia.org/wiki/Upstart), [forever](https://github.com/foreverjs/forever),
-[pm2](https://github.com/Unitech/pm2), etc.
+The babysitter is meant to alleviate the tedium of starting & managing multiple processes when developing distributed applications. It has been used daily to manage 20+ simultaneous processes with negligible overhead. This manager is meant to be used **FOR DEVELOPMENT ONLY**. Please use something better for production such [systemd](https://en.wikipedia.org/wiki/Systemd), [upstart](https://en.wikipedia.org/wiki/Upstart), [forever](https://github.com/foreverjs/forever),
+[pm2](https://github.com/Unitech/pm2), [Docker](https://www.docker.com/), etc.
 
 ```
 npm install -g process-babysitter
