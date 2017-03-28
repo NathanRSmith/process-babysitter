@@ -79,3 +79,5 @@ The UI itself should be fairly self-explanatory with stdout on the left & stderr
 ```
 open http://localhost:9876/
 ```
+
+![UI Screenshot](ui.png)
