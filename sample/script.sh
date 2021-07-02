@@ -1,3 +1,4 @@
+echo $FOO
 while true
 do
 	date

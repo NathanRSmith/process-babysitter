@@ -29,6 +29,7 @@ The configuration should contain:
     * `command`: Templated command to run.
     * `cwd`: Templated value for the subprocess working directory.
     * `args`: Array of templated arguments for the subprocess (everything that follows the command).
+    * `env`: Map of environment variable name to value to use for that var. If the value starts with `$`, it will be assumed to refer to an existing env var and use its value at run time.
 
 Example `default.json`:
 
@@ -47,7 +48,11 @@ Example `default.json`:
       "name": "API Service",
       "command": "node",
       "cwd": "<%= services_dir %>my-api",
-      "args": ["<%= services_dir %>my-api/index.js"]
+      "args": ["<%= services_dir %>my-api/index.js"],
+      "env": {
+        "MY_VAR_1": "foo",
+        "MY_VAR_2": "$BAR"
+      }
     },
     "mongodb": {
       "id": "mongodb",
@@ -59,7 +64,7 @@ Example `default.json`:
 }
 ```
 
-It should be noted that child processes will inherit the environment variables set when the babysitter is started. Setting variables per process is not yet supported but planned in the near future.
+It should be noted that child processes will inherit the environment variables set when the babysitter is started. If env vars are specified for the process, they will override the babysitter's env vars for that process.
 
 Use the standard [node-config variables](https://github.com/lorenwest/node-config/wiki/Environment-Variables) (`NODE_ENV`, `NODE_APP_INSTANCE`, etc) to change which config files are loaded. The babysitter will pass on any `process.env` variables except the following so as to not interfere with child processes.
 
@@ -81,3 +86,11 @@ open http://localhost:9876/
 ```
 
 ![UI Screenshot](ui.png)
+
+
+# Development
+
+```
+npm version x.y.z -m '<release notes>'
+npm publish
+```

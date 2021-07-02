@@ -33,6 +33,7 @@ module.exports = function(CONFIG) {
         args_tpls: _.map(v.args, function(v) {
           return _.template(v);
         }),
+        env: v.env || {},
       };
     })
     .keyBy('config.id')
@@ -66,12 +67,23 @@ module.exports = function(CONFIG) {
 
     // don't start if already running
     if(proc.child) return res.sendStatus(200);
+
+    // determine env vars
+    var env = _.extend(
+      _.omit(process.env, 'NODE_CONFIG_DIR', 'NODE_ENV', 'NODE_APP_INSTANCE'),
+      _.mapValues(proc.env, function(v, k) {
+        if(_.startsWith(v, '$')) return process.env[v.slice(1)];
+        return _.toString(v);
+      })
+    );
+
+    // spawn proc
     proc.child = spawn(
       proc.command_tpl(CONFIG.template_vars),
       _.map(proc.args_tpls, function(v) { return v(CONFIG.template_vars); }),
       {
         cwd: proc.cwd_tpl(CONFIG.template_vars),
-        env: _.omit(process.env, 'NODE_CONFIG_DIR', 'NODE_ENV', 'NODE_APP_INSTANCE')
+        env: _.pickBy(env)
       }
     );
 
